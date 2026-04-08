@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Joke Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Georgia, serif;
+      background-color: #fff8f0;
+      color: #2c2c2c;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    #wrapper {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    #header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    #header h1 {
+      font-size: 2.2rem;
+      color: #c0392b;
+    }
+
+    #header p {
+      font-size: 1rem;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    #controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    select {
+      flex: 1;
+      min-width: 140px;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    #gen-btn {
+      padding: 10px 24px;
+      background: #c0392b;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    #gen-btn:hover { background: #a93226; }
+    #gen-btn:active { transform: scale(0.97); }
+
+    #joke-card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .joke-tag {
+      display: inline-block;
+      font-size: 12px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      background: #fde8e6;
+      color: #c0392b;
+    }
+
+    .joke-setup {
+      font-size: 18px;
+      line-height: 1.6;
+      font-weight: bold;
+    }
+
+    .joke-punchline {
+      font-size: 16px;
+      color: #555;
+      line-height: 1.6;
+      border-top: 1px solid #eee;
+      padding-top: 1rem;
+      width: 100%;
+    }
+
+    #reveal-btn {
+      padding: 8px 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    #reveal-btn:hover { background: #f5f5f5; }
+
+    .placeholder { color: #aaa; font-size: 15px; }
+
+    #stats {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-box {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      padding: 12px 24px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .stat-number { font-size: 24px; font-weight: bold; color: #c0392b; }
+    .stat-label  { font-size: 12px; color: #888; margin-top: 4px; }
+
+    .rating { display: flex; gap: 8px; justify-content: center; }
+
+    .star {
+      font-size: 26px;
+      cursor: pointer;
+      color: #ddd;
+      transition: color 0.1s;
+    }
+
+    .star.on { color: #f39c12; }
+
+    #nav {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 14px;
+      color: #888;
+    }
+
+    #nav a { color: #c0392b; text-decoration: none; margin: 0 8px; }
+    #nav a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div id="wrapper">
+  <div id="header">
+    <h1>Joke Generator</h1>
+    <p>AI-powered jokes on demand — pick a category and go</p>
+  </div>
+
+  <div id="controls">
+    <select id="cat">
+      <option value="general">Any category</option>
+      <option value="dad jokes">Dad jokes</option>
+      <option value="programming">Programming</option>
+      <option value="science">Science</option>
+      <option value="puns">Puns</option>
+      <option value="knock knock">Knock-knock</option>
+    </select>
+    <select id="style">
+      <option value="setup and punchline">Setup + punchline</option>
+      <option value="one-liner">One-liner</option>
+      <option value="short story">Short story joke</option>
+    </select>
+    <button id="gen-btn" onclick="getJoke()">Generate Joke</button>
+  </div>
+
+  <div id="joke-card">
+    <p class="placeholder">Hit "Generate Joke" to get started</p>
+  </div>
+
+  <div id="stats">
+    <div class="stat-box">
+      <div class="stat-number" id="cnt">0</div>
+      <div class="stat-label">Jokes Generated</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number" id="avgrating">—</div>
+      <div class="stat-label">Avg. Rating</div>
+    </div>
+  </div>
+
+  <div id="nav">
+    <a href="index.html">Home</a>
+    <a href="scratch.html">Back to Scratch Page</a>
+  </div>
+</div>
+
+<script>
+  let count = 0;
+  let ratings = [];
+
+  async function getJoke() {
+    const cat   = document.getElementById('cat').value;
+    const style = document.getElementById('style').value;
+    const card  = document.getElementById('joke-card');
+
+    card.innerHTML = '<p class="placeholder">Thinking of something funny...</p>';
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          system: 'You are a joke generator. Return ONLY valid JSON with no markdown, no backticks, no explanation. Format: {"setup":"...","punchline":"...","category":"..."}. For one-liners, put the whole joke in setup and leave punchline as an empty string.',
+          messages: [{
+            role: 'user',
+            content: `Tell me a ${style} joke in the category: ${cat}. Return only the JSON object.`
+          }]
+        })
+      });
+
+      const data = await response.json();
+      const text = data.content.map(i => i.text || '').join('');
+      const joke = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+      count++;
+      document.getElementById('cnt').textContent = count;
+      renderJoke(joke);
+
+    } catch (err) {
+      card.innerHTML = '<p class="placeholder">Oops, something went wrong. Try again!</p>';
+    }
+  }
+
+  function renderJoke(joke) {
+    const card = document.getElementById('joke-card');
+    let html = `<span class="joke-tag">${joke.category || 'joke'}</span>`;
+    html += `<p class="joke-setup">${joke.setup || ''}</p>`;
+
+    if (joke.punchline) {
+      html += `<button id="reveal-btn" onclick="revealPunchline(this, '${encodeURIComponent(joke.punchline)}')">Reveal Punchline</button>`;
+    }
+
+    html += `<div class="rating" id="stars">
+      ${[1,2,3,4,5].map(i => `<span class="star" onclick="rate(${i})" id="s${i}">&#9733;</span>`).join('')}
+    </div>`;
+
+    card.innerHTML = html;
+  }
+
+  function revealPunchline(btn, encoded) {
+    const text = decodeURIComponent(encoded);
+    const p = document.createElement('p');
+    p.className = 'joke-punchline';
+    p.textContent = text;
+    btn.replaceWith(p);
+  }
+
+  function rate(n) {
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById('s' + i).className = 'star' + (i <= n ? ' on' : '');
+    }
+    ratings.push(n);
+    const avg = (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
+    document.getElementById('avgrating').textContent = avg;
+  }
+</script>
+
+</body>
+</html> 
